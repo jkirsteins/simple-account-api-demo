@@ -37,6 +37,7 @@ Account API demo in Java + Spark with JUnit tests.
         - legal entities
     - ASSUMPTION: approval will always come down to a "person" approving or denying something. Should systems approve something?
     - ASSUMPTION: though end-user authentication is not involved, it could be useful to have "forced" transactions require a signature from an HSM (to avoid tampering by employees, even for an internal system)
+    - accounts should have some type of algorithmic visually distinguishable name (to ease maintenance/use/development when you see e.g. transfers between "SEPA:LV40HABA..." to "ETH:0x123..." instead of between "512" to "152")
     - SKIPPED: for an internal system, need to get feedback about "what's next" so the frontend can gather that data etc.
         - out of scope. This API only reacts to events, so whichever system interacts with it, can also generate the notifications
     - detailed auditing is important, so allow for that
