@@ -47,7 +47,7 @@ public class AppTest
     @Test
     public void testApp() throws Exception
     {
-        String body = Unirest.get(url("/hello")).asString().getBody();
-        assertEquals("Hello World", body);
+        String body = Unirest.get(url("/api/v1/hello")).asString().getBody();
+        assertEquals("Hello API v1", body);
     }
 }
