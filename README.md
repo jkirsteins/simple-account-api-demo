@@ -42,7 +42,12 @@ Account API demo in Java + Spark with JUnit tests.
         - out of scope. This API only reacts to events, so whichever system interacts with it, can also generate the notifications
     - detailed auditing is important, so allow for that
         - just a dummy interface, as it is out-of-scope, and detailed requirements would probably come from the legal department
+    - accounts and transfer requests probably need some type of nonce value (so that we don't accidentally create two requests simultaneously, that could affect each others' balances)
+    - a mechanism for splitting the output of a transfer (e.g. add a transfer fee)
+        - keep the responsibility of determining this outside of this project
 - conclusions:
+    - what of different values? must go through some kind of conversion
+        - prohibited for now
     - same user or other users can submit information required to approve the transaction
     - accounts have two balances (actual, and available)
     - transactions need to have ways to be flagged (maybe not on the transaction object, but invoke another API which decides who and when to notify)
@@ -68,6 +73,7 @@ Account API demo in Java + Spark with JUnit tests.
     - proposed transaction lifecycle:
         - a user or a system creates a transaction request:
             - check if they have permission to create the request
+                - out of scope!
             - check if there is sufficient (confirmed) balance in the account
                 - if insufficient balance, check max overdraft. Allow to override (since this is an internal system API) to force the payment regardless
         - check the transaction legal approval workflow:
@@ -77,6 +83,13 @@ Account API demo in Java + Spark with JUnit tests.
         - when approved, transaction goes into "pending" state and the "available" value of the account changes
             - marked as "finalized" by an external service
 
+-known issues
+ - manual testing delay
+ - in-memory DAO applies updates without calling update() - this ruins some tests
+ - in-memory transaction rollbacks do nothing
+- considerations
+  - chosen framework treats "accounts/" different from "accounts", which is unforgiving to clients (common to use both interchangeably). Since an internal API, not a public one, could be fine.
+  - testing the API via HTTP calls (slower, but for an API, I think justifyable. Since the implementation classes are special-built for 1 use, it makes sense to test the outermost interface)
 
         -
 
