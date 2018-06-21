@@ -84,6 +84,55 @@ a transfer recipient in its request.
 - when a transfer is finalized, the total of the source account should be adjusted accordingly. The receiving accounts
   should have their available/total balance increased immediately.
   
+## Resulting API
+
+This project aims to have a strict "resource-based" API, instead of an API that models remote procedures. 
+
+**NOTE: the trailing slash is important**
+
+    # Create an account
+    POST /api/v1/account/
+    
+    # Get an account
+    GET /api/v1/account/:visual_id
+    
+    # Create a transfer request
+    POST /api/v1/account/:visual_id/transfer_request/
+    
+    # Get the status (approved/pending/denied) of a transfer request
+    GET /api/v1/account/:visual_id/transfer_request/:transfer_request_id/status
+    
+    # Get all approval requirements for a transfer request
+    GET /api/v1/account/:visual_id/transfer_request/:transfer_request_id/approval_requirement/
+    
+    # Submit information to satisfy a specific approval requirement for a transfer request
+    PUT /api/v1/account/:visual_id/transfer_request/:transfer_request_id/approval_requirement/:approval_requirement_id
+    
+    # Create a transfer (after a transfer request is approved)
+    POST /api/v1/account/:visual_id/transfer/
+    
+    # Get an existing transfer (pending or finalized)
+    GET /api/v1/account/:visual_id/transfer/:transfer_id
+    
+    # Finalize a pending transfer (meant for external transfer monitoring services)
+    PUT/api/v1/account/:visual_id/transfer/:transfer_id
+    
+### Versioning
+
+It is important to consider API versioning from the ground up. All of the endpoints in this example are put under "/api/v1/".
+
+While an argument could be made that putting the version information in the route is suboptimal, it can be changed
+more easily than introducing versioning to an unversioned API.
+
+### Plural vs Singular
+
+This project opts for "always singular" - e.g. "/account/" vs "/accounts/".
+
+## Glossary and Terminology
+
+- the source code uses the term "visual id" when referring to account IDs. The "visual id" - given an account of type X, and name Y, is "X:Y".
+  E.g. an "EUR" account "LV40HABA..." will have the "visual id" "EUR:LV40HABA...".
+  
 ## Auditing Requirements
 
 Financial institutions might have strict regulatory auditing requirements, so we can not rely on regular logging.
@@ -108,7 +157,6 @@ each entry is signed with a master key, and inclues the hash of the previous ent
   in the case of an API (because the backing classes - even if public - are more implementation details, and it is more
   important to test that they have been mapped to routes correctly)
   
-
 ## Known Issues and Limitations
 
 - Spark does not support testing very well, and starting/stopping the embedded webserver can not be done reliably.
