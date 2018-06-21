@@ -18,8 +18,7 @@ public abstract class AbstractSparkTest
     App app = null;
 
     @Before
-    public void startServer() throws Exception
-    {
+    public void startServer() {
         String[] args = {};
         app = App.mainWithOverrides(args, new Module() {
             @Override

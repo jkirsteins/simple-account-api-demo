@@ -74,7 +74,7 @@ public class DummyApprovalService implements ApprovalService
 
 	@Override
 	public ApprovalStatus submitChallengeResponse(int transferRequestId, int approvalId, String response)
-			throws TransferDeniedException, OperationNotSupportedException {
+			throws TransferDeniedException {
 
         ApprovalStatus existingStatus = this.getApprovalStatusForTransferRequest(transferRequestId);
         if (existingStatus == ApprovalStatus.ApprovalDenied_WillNotProceed)
