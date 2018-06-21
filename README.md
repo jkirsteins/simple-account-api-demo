@@ -1,95 +1,131 @@
-Account API demo in Java + Spark with JUnit tests.
+# Account API demo in Java + Spark with JUnit tests.
 
-- run with ./rundev.sh
-- test with mvn test
+This is an exploration of what a backend REST API for a financial services institution might look like
+initially. It is written as a learning exercise, using Java and [Spark](http://sparkjava.com). 
 
-# Temporary notes
+- on Linux or macOS you can easily run it using Spark's embedded server with `./rundev.sh` 
+- execute all tests with `mvn test`
 
-- using namespaces based on features not layer (to avoid splitting e.g. interface, model and DAO across multiple folders)
-- thought process
-    - accounts can store different types of values - money, cryptocurrencies, and securities (keeping to these 3)
-    - transfer must be between compatible types of accounts
-    - accounts can be owned by individuals, but also companies
-    - accounts may require multi-user approval (e.g. there could be escrow requirements, or a company account can be controlled by some board members jointly, but not individually)
-        - the authorization requirements stem from the individuals, not the accounts (e.g. person A can control an account on their own, but person B and C need to do it jointly)
-    - some users can initiate a transfer request (but not initiate the actual transfer). E.g. a user specifies "I need to pay X", but a different user must approve
-    - some transactions need more information to be approved (approval by user X, or multiple users, or even paperwork, or even manual admin approval/account on hold), and then they can be executed
-    - some transactions will be denied after providing more information (e.g. need KYC for user X, and KYC indicates they are in a sanction list)
-    - some transactions will always have priority, and some transactions will be automatic (provided there is sufficient balance)
-        - e.g. automatic mortgage payment to the bank's account (which can leave the account in the red)
-    - some transactions will be timed
-    - some transactions will allow overdraft, some will not
-        - some of this determined by the account type (credit account) and some determined by special privileges (e.g. Nordea allows an overdraft transaction from a regular account, if they are the recipient)
-    - KYC/sanction lists (abstract away as an opaque thing)
-    - security
-        - 1 security check is "is this transaction approved by the people who have the legal authority"
-        - another is - can this transaction go through at all? (sufficient balance/involved accounts on hold/missing KYC/sanction list information for the recipients)
-    - when is a transfer marked completed?
-        - wire/SEPA/cryptocurrencies? Not sure how it goes re: SEPA/wire/stock transfers, but different cryptocurrencies need different confirmation counts
-        - stub out a transaction approval service, which marks "in progress" transactions as completed?
-    - there needs to be some notification capability (to know when e.g. final approval needs to be done for a transaction) associated with this
-    - legal approval for transactions comes from just 1 place (the owner of the account, which is an entity not a user)
-        - legal approval for an entity is composed by multiple users
-    - who can own accounts?
-        - at a granular level, individuals, for-profits, governments, charities, etc.
-        - for the purposes of approval, this is not important. Need to map "rules" on how users form a definitive legal approval.
-        - individuals
-        - legal entities
-    - ASSUMPTION: approval will always come down to a "person" approving or denying something. Should systems approve something?
-    - ASSUMPTION: though end-user authentication is not involved, it could be useful to have "forced" transactions require a signature from an HSM (to avoid tampering by employees, even for an internal system)
-    - accounts should have some type of algorithmic visually distinguishable name (to ease maintenance/use/development when you see e.g. transfers between "SEPA:LV40HABA..." to "ETH:0x123..." instead of between "512" to "152")
-    - SKIPPED: for an internal system, need to get feedback about "what's next" so the frontend can gather that data etc.
-        - out of scope. This API only reacts to events, so whichever system interacts with it, can also generate the notifications
-    - detailed auditing is important, so allow for that
-        - just a dummy interface, as it is out-of-scope, and detailed requirements would probably come from the legal department
-    - accounts and transfer requests probably need some type of nonce value (so that we don't accidentally create two requests simultaneously, that could affect each others' balances)
-    - a mechanism for splitting the output of a transfer (e.g. add a transfer fee)
-        - keep the responsibility of determining this outside of this project
-- conclusions:
-    - what of different values? must go through some kind of conversion
-        - prohibited for now
-    - same user or other users can submit information required to approve the transaction
-    - accounts have two balances (actual, and available)
-    - transactions need to have ways to be flagged (maybe not on the transaction object, but invoke another API which decides who and when to notify)
-    - how to model approval
-        - not via Users/LegalEntities/etc. (irrelevant and constricting at this level), but with Approvers
-            - each approver has a Guid (can map to tax residency numbers, company IDs, private keys)
-            - system accepts a blank "Approver X says Yes/No"
-            - all will be verified, despite being an internal system:
-                - i.e. frontend claims user X pressed Approve, but they still have to enter a 2FA code
-                - OPTIONAL: automatic acceptance if no 2FA enabled, OR for small sums (e.g. until a threshold)
-                - i.e. cryptocurrency transfer could require a verifiable signature, which allows keeping the keys with the user (and even could require response to a challenge, in case of non-custodial multisig/interaction with smart contracts)
-                - a "forced" transaction needs to be signed by an HSM to minimize risk of employee negligence/mistakes/malicious use (for auditors)
-                - approval can take the form of a digitally signed document (so a user can e-mail it in). The system can verify it contains "I approve transaction X" and is signed in an eIDAS compliant manner
-        - implementation ideas:
-            - system generates "approval requests" and waits for them to be submitted by the outside system
-            - approval requests need to model AND and OR relationships. Hierarchy could be:
-                - TransferRequest
-                |-- TransferApprovalRequestGroup (type AND) (one root group for each request, parent NULL)
-                  |-- TransferApprovalRequest  (refers to the group) (can contain a challenge etc.)
-                  |-- TransferApprovalRequestGroup (type AND/OR) (parent group is NOT NULL)
-            - this allows modelling multisig, multi factor authorization etc.
-            - distinction between group/request can further be removed, by having requests point to an optional parent-request
-    - proposed transaction lifecycle:
-        - a user or a system creates a transaction request:
-            - check if they have permission to create the request
-                - out of scope!
-            - check if there is sufficient (confirmed) balance in the account
-                - if insufficient balance, check max overdraft. Allow to override (since this is an internal system API) to force the payment regardless
-        - check the transaction legal approval workflow:
-            - always ends with some [users] (not entities) who can approve the transaction (in case of a multisig account, require approval of multiple, but eventually it will be just one)
-            - notify the users when they are added to a transaction request as approvers (or when the transaction is prematurely denied by somebody)
-            - can have multiple steps (e.g. before a user can start approving, they may be required to submit KYC information, and a sanctions checks might be run, which determines final eligibility to participate. If ineligible, transaction not cancelled, but flagged)
-        - when approved, transaction goes into "pending" state and the "available" value of the account changes
-            - marked as "finalized" by an external service
+## Thoughts on the Design
 
--known issues
- - manual testing delay
- - in-memory DAO applies updates without calling update() - this ruins some tests
- - in-memory transaction rollbacks do nothing
-- considerations
-  - chosen framework treats "accounts/" different from "accounts", which is unforgiving to clients (common to use both interchangeably). Since an internal API, not a public one, could be fine.
-  - testing the API via HTTP calls (slower, but for an API, I think justifyable. Since the implementation classes are special-built for 1 use, it makes sense to test the outermost interface)
+### Account Types
 
-        -
+Most financial services support (or aspire to support) multiple types of assets (e.g. money, cryptocurrencies, securities).
+  
+In this thought experiment, let's assume they are all equivalent.
 
+### Transfer Constraints
+
+- Transfers can happen between more than 2 accounts (e.g. account A can send to B, or it could sent to B and C simultaneously. B could
+  be the main recipient, and C could be e.g. an account for collecting transfer fees)
+- Transfers must happen between accounts of the same denomination (e.g. no ETH <-> EUR transfers). Although, in the future,
+  a conversion layer could be introduced (e.g. send Ethereum to a Euro account using a specific conversion rate. Alternatively, send
+  Euro and collect a fee in Ethereum).
+- Support for overdrafts should be allowed.
+
+### Account Types, Owner/User Entities, KYC ...
+
+All of this can be kept on the frontend. If - in the future - it turns out that more integration of these concerns
+is required, then the ApprovalRequirement system can be updated to include the new requirements (see *Transfer Approvals*).
+
+### Transfer Approvals
+
+If we assume transfers are created directly in one call, then we offload complexity to the API consumer. It is likely that a 
+typical transfer backend API would be called by multiple different subsystems, so it could lead to a divergent way in
+how transfers are approved.
+
+Furthermore, advanced use cases (such as a non-custodial cryptocurrency service), multi-factor authentication, or
+an regulatory requirement to keep cryptographically signed audits, might stipulate approval using external information (i.e. 
+we can not say "create this transfer because we trust the API caller". Instead "even though we trust the API caller, we need more information"). 
+This extra information could be a pre-prepared signed cryptocurrency transaction, a one-time factor code from a hardware token,
+or a signed approval (where the signing key is kept in a hardware security module).
+
+### Transfer Finalization
+
+After a transfer is approved and initiated, it still needs to be finalized. This can mean:
+
+- a cryptocurrency transaction has achieved sufficient confirmation count, or
+- a wire transfer has cleared,
+- etc.
+
+To account for this - and the fact that different accounts will need different confirmations - we leave finalization
+up to the API consumer.
+
+E.g. a separate service could run cryptocurrency monitoring, and invoke ther API when crypto transfers should be finalized
+
+And a separate service could be responsible for finalizing SEPA transfers, etc.
+
+### Proposed Transfer Lifecycle
+
+A simple initial transfer lifecycle could be:
+
+- create a transfer request between accounts, perform validation (sufficient balance, matching account types etc.)
+- API consumer requests a list of additional information required (a collection of [ApprovalRequirement] objectsw). 
+  
+  In theory, the collection can be empty (and the transfer initiated immediately). Or it could ask for more information,
+  the gathering of which is up to the frontend/API consumer.
+  
+  Each ApprovalRequirement is generic - it can have a type, and an optional request, and an optional response field. Based
+  on the type, the approval service determines how to interpret these fields.
+  
+  The approval service could be built-in, or offloaded to an external API.
+- a transfer request can specify that overdraft is allowed. We trust the caller.
+- a transfer remains in the "pending" state until it is finalized by an external API caller.
+
+### Fees
+
+This concept is deliberately kept out of scope of the backend API. The caller should account for fees, and include
+a transfer recipient in its request.
+
+### Account Balances and Transfer Statuses
+
+- when a transfer is initiated, the available balance of the source account changes (but not the totals of either 
+  source or receiving accounts, and not the available balance of the receiving account)
+- when a transfer is finalized, the total of the source account should be adjusted accordingly. The receiving accounts
+  should have their available/total balance increased immediately.
+  
+## Auditing Requirements
+
+Financial institutions might have strict regulatory auditing requirements, so we can not rely on regular logging.
+
+This should be accounted for, but since the actual auditing requirements can be very specific to the business, no auditing
+is implemented (apart from noting that it is an important concept).
+
+Different audit logs can be easily injected using dependency injection, when the need arises.
+
+An example use case of a more-advanced-than-regular-development-log could be a cryptographically tamper-proof log, where
+each entry is signed with a master key, and inclues the hash of the previous entry.
+
+## Limitations
+
+- no support for transfer cancellations (e.g. DELETE pending)
+- no support for transfers between accounts of different types/denominations
+- no actual audit logging
+
+## Tests
+
+- API tests spin up the embedded webserver. Even though this is strictly not correct unit testing, it seems reasonable
+  in the case of an API (because the backing classes - even if public - are more implementation details, and it is more
+  important to test that they have been mapped to routes correctly)
+  
+
+## Known Issues and Limitations
+
+- Spark does not support testing very well, and starting/stopping the embedded webserver can not be done reliably.
+  To sidestep this issue, I have introduced a deliberate 2 second delay after every test.
+  
+  This is a known issue: https://github.com/perwendel/spark/issues/705
+  
+  The solution is already developed, but a new Spark version has not been released with it. When it is, then
+  Spark.stop() should be replaced by Spark.awaitStop(), and the delay removed 
+- the in-memory data access objects do not require #update() to be called (because the updates are done directly on the
+  master version of each object).
+  
+  This means that tests using them can be unreliable (e.g. if a service forgets to call #update(), this will not be caught
+  in tests, but could cause a problem in production).
+  
+  To counter this, either a proper in-memory data storage service should be used (incl. proper transaction support too),
+  or unit tests should be written for the dummy DAOs to make sure they do require #update.
+- Spark treats "/account" and "/account/" as different routes. This could be a problem with a public API (where it is
+  better to be lenient), but for an internal API it is likely acceptable.
+       
