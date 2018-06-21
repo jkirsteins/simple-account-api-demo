@@ -1,3 +1,4 @@
+// © 2018 Janis Kirsteins. Licensed under MIT (see LICENSE.md)
 package org.janiskirsteins.accounts.api.v1;
 
 import com.google.inject.Binder;
@@ -15,6 +16,9 @@ import org.janiskirsteins.accounts.api.v1.transfers.TransferService;
 import org.janiskirsteins.accounts.api.v1.transfers.approval.ApprovalService;
 import org.janiskirsteins.accounts.api.v1.transfers.approval.DummyApprovalService;
 
+/**
+ * Guice module for injecting dependencies.
+ */
 public class ProductionDependencyModule implements Module
 {
 	@Override

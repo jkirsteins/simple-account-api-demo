@@ -1,22 +1,27 @@
+// © 2018 Janis Kirsteins. Licensed under MIT (see LICENSE.md)
 package org.janiskirsteins.accounts.api.v1.transfers.approval;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-
-import javax.naming.OperationNotSupportedException;
-
 import com.google.inject.Inject;
 
-import org.janiskirsteins.accounts.api.model_base.BaseDAO;
-import org.janiskirsteins.accounts.api.v1.transfers.Transfer;
 import org.janiskirsteins.accounts.api.v1.transfers.TransferDAO;
 import org.janiskirsteins.accounts.api.v1.transfers.TransferRequest;
 import org.janiskirsteins.accounts.api.v1.transfers.TransferRequestDAO;
 import org.janiskirsteins.accounts.api.v1.transfers.approval.ApprovalRequirement.RequiredApprovalType;
 
+/**
+ * A dummy implementation of the ApprovalService.
+ *
+ * For new transfer requests, it always returns just one requirement.
+ *
+ * To satisfy the requirement, submit a payload "APPROVED".
+ * If the payload is null, the requirement is pending.
+ * If the payload is non-APPROVED and non-null, the requirement is permanently denied.
+ *
+ * @see RequiredApprovalType#Debug_PutAPPROVEDInResponse
+ * @see ApprovalService
+ */
 public class DummyApprovalService implements ApprovalService
 {
     ApprovalRequirementDAO arDao;

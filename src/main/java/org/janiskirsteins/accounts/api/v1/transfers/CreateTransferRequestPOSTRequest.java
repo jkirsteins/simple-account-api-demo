@@ -1,17 +1,29 @@
+// © 2018 Janis Kirsteins. Licensed under MIT (see LICENSE.md)
 package org.janiskirsteins.accounts.api.v1.transfers;
 
-import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import org.janiskirsteins.accounts.api.model_base.BaseCreateRequest;
-import org.janiskirsteins.accounts.api.model_base.BaseModel;
+import org.janiskirsteins.accounts.api.model_base.GenericCreateRequest;
 import org.janiskirsteins.accounts.api.model_base.InvalidRequestException;
+import org.janiskirsteins.accounts.api.v1.DataStoreConcurrencyScheduler;
 import org.janiskirsteins.accounts.api.v1.accounts.Account;
 import org.janiskirsteins.accounts.api.v1.accounts.AccountDAO;
+import spark.Response;
 
+/**
+ * POST request for creating transfer requests.
+ *
+ * When a POST request is sent to e.g. a transfer creation route (/account/xxx/transfer_request/)
+ * then the request contents are deserialized from JSON To this object.
+ *
+ * Then it is passed to ApiResponse for processing and generating a response, which
+ * is returned to the API client.
+ *
+ * @see org.janiskirsteins.accounts.api.v1.ApiResponse#responseFromCreateRequestInTransaction(DataStoreConcurrencyScheduler, Response, GenericCreateRequest)
+ */
 class CreateTransferRequestPOSTRequest extends BaseCreateRequest<TransferRequest>
 {
     private String sourceAccountVisualId;
@@ -20,6 +32,11 @@ class CreateTransferRequestPOSTRequest extends BaseCreateRequest<TransferRequest
     private AccountDAO accountDao;
     private TransferRequestDAO trDao;
 
+    /**
+     * Constructor.
+     * @param recipients
+     * @param allowOverdraft
+     */
 	public CreateTransferRequestPOSTRequest(
         List<TransferRecipient> recipients,
         boolean allowOverdraft)
@@ -28,7 +45,15 @@ class CreateTransferRequestPOSTRequest extends BaseCreateRequest<TransferRequest
         this.allowOverdraft = allowOverdraft;
     }
 
-    /** This method is necessary because we deserialize the requests from POST data, and can not pass this in through the constructor. */
+    /**
+     * This function allows for dependency injection, which can not happen
+     * through the constructor, because instances of this class are deserialized
+     * automatically from JSON.
+     *
+     * @param accountDao
+     * @param trDao
+     * @param sourceAccountVisualId set this to the expected source account
+     */
     public void prepareForValidation(AccountDAO accountDao, TransferRequestDAO trDao, String sourceAccountVisualId)
     {
         this.accountDao = accountDao;
@@ -36,6 +61,19 @@ class CreateTransferRequestPOSTRequest extends BaseCreateRequest<TransferRequest
         this.sourceAccountVisualId = sourceAccountVisualId;
     }
 
+    /**
+     * This should not be invoked directly. It assumes invocation
+     * within a transaction.
+     *
+     * @see BaseCreateRequest#validateWithinTransaction()
+     * @throws UnsupportedOperationException if the dependencies have not been injected via this#prepareForValidation
+     * @throws UnsupportedOperationException if the sourceAccountVisualId value is null
+     * @throws InvalidRequestException if the sourceAccountVisualId refers to an invalid (not found) account
+     * @throws InvalidRequestException if the recipient list is empty
+     * @throws InvalidRequestException if the recipient list contains an invalid (not found) account
+     * @throws InvalidRequestException if the recipient list contains an account with different tickerSymbol than the source account
+     * @throws InvalidRequestException if the transfer size exceeds the source account's available balance (and overdraft is not allowed)
+     */
     @Override
     protected void validateWithinTransaction() throws InvalidRequestException, UnsupportedOperationException
     {
@@ -89,6 +127,13 @@ class CreateTransferRequestPOSTRequest extends BaseCreateRequest<TransferRequest
         }
 	}
 
+    /**
+     * This should not be invoked directly. It assumes invocation
+     * within a transaction.
+     *
+     * @see BaseCreateRequest#createWithinTransaction()
+     * @return
+     */
 	@Override
     protected TransferRequest createWithinTransaction()
     {

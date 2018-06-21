@@ -1,9 +1,19 @@
+// © 2018 Janis Kirsteins. Licensed under MIT (see LICENSE.md)
 package org.janiskirsteins.accounts.api.v1.accounts;
 
 import java.math.BigInteger;
 
 import org.janiskirsteins.accounts.api.model_base.BaseModel;
 
+/**
+ * Simple account model.
+ *
+ * It features a denominatino (tickerSymbol), a name, and
+ * has two types of balances - available/total.
+ *
+ * The balances should be governed by the TransferService, and this model
+ * only exposes methods for changing them (but does not enforce any rules).
+ */
 public class Account extends BaseModel
 {
 	private String tickerSymbol;

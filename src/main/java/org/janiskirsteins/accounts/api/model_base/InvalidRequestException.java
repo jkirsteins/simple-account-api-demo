@@ -1,5 +1,10 @@
+// © 2018 Janis Kirsteins. Licensed under MIT (see LICENSE.md)
 package org.janiskirsteins.accounts.api.model_base;
 
+/**
+ * This exception signals that an API request was invalid (malformed or
+ * refers to invalid relationships etc.)
+ */
 public class InvalidRequestException extends Exception
 {
 	private static final long serialVersionUID = -5233349331872400231L;
