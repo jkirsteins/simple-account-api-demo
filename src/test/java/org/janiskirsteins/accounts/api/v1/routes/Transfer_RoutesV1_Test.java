@@ -97,7 +97,16 @@ public class Transfer_RoutesV1_Test extends AbstractSparkTest
     @Test
     public void testConfirm_putEmptyBody_invokesFinalize() throws Exception
     {
-        String realResponse = Unirest.put(url("/api/v1/account/ETH:0x1234/transfer/1")).body("{isConfirmed: true}").asString().getBody();
+        Account mockAccount = new Account("ETH", "0x1234");
+        Transfer mockTransfer = new Transfer(1);
+        accountDao.insert(mockAccount);
+        TransferRequest transferRequest = mock(TransferRequest.class);
+        when(transferRequest.getPrimaryKey()).thenReturn(-1, 1);
+        transferRequestDao.insert(transferRequest);
+        transferDao.insert(mockTransfer);
+        when(transferService.finalizeTransfer(1)).thenReturn(mockTransfer);
+
+        String realResponse = Unirest.put(url("/api/v1/account/ETH:0x1234/transfer/1")).asString().getBody();
 
         verify(transferService, times(1)).finalizeTransfer(1);
         assertJsonEquals("{\"statusCode\":200}", realResponse, net.javacrumbs.jsonunit.JsonAssert.when(IGNORING_EXTRA_FIELDS));
