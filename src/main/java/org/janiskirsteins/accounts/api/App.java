@@ -63,13 +63,6 @@ public class App implements SparkApplication
         path("/api/v1", () -> {
             path(rootAccountRoutes.ROOT, rootAccountRoutes::populatePath);
         });
-
-        // testing splat and params
-        path("/test/:value_a", () -> {
-            get("/second/:value_b", (req,resp) -> {
-                return String.format("A: %s; B: %s", req.params(":value_a"), req.params(":value_b"));
-            });
-        });
 	}
 }
 
