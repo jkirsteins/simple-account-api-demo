@@ -1,6 +1,5 @@
 package org.janiskirsteins.accounts.api.v1.transfers.approval;
 
-import java.rmi.server.Operation;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;

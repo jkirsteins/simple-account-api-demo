@@ -75,8 +75,6 @@ public class TransferRoutesV1
     public Object showTransfer(Request request, Response response)
     {
         Transfer result = transferDao.findById(getTransferId(request));
-        System.out.println(String.format("Showing transfer %d", getTransferId(request)));
-        System.out.println(String.format("Known transfers %s", transferDao.all()));
         return ApiResponse.respondWithResourceOrNull(response, result);
     }
 
